@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import './categoryImageScreen.dart';
-
-import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(MaterialApp(
@@ -12,74 +12,91 @@ void main() {
   ));
 }
 
-class FurnitureScreen extends StatelessWidget {
+class FurnitureScreen extends StatefulWidget {
+  @override
+  _FurnitureScreenState createState() => _FurnitureScreenState();
+}
+
+class _FurnitureScreenState extends State<FurnitureScreen> {
+  // GitHub configuration
+  final String repoOwner = 'your-github-username';
+  final String repoName = 'your-repo-name';
+  final String branch = 'main';
+  final String basePath = 'ar_data';
+
+  // Category data
   final List<Map<String, String>> categories = [
-    {"title": "Bohemian", "image": "assets/bohemiancrop.jpg"},
-    {"title": "Kids", "image": "assets/kids.jpg"},
-    {"title": "Modern", "image": "assets/modern.jpg"},
-    {"title": "Classic", "image": "assets/classic.jpg"},
+    {"title": "Bohemian", "image": "bohemiancrop.jpg"},
+    {"title": "Kids", "image": "kids.jpg"},
+    {"title": "Modern", "image": "modern.jpg"},
+    {"title": "Classic", "image": "classic.jpg"},
   ];
 
-  final Map<String, Map<String, List<String>>> categoryImages = {
-    "Bohemian": {
-      "Beds": [
-        "assets/boho_bed_1.png",
-        "assets/boho_bed_2.png",
-        "assets/boho_bed_3.png"
-      ],
-      "Sofas": [
-       "assets/boho_sofa_1.png",
-        "assets/boho_sofa_2.png",
-        "assets/boho_sofa_3.png"
-      ],
-      "waredrops":[
-       "assets/boho_waredrobe_1.png",
-        "assets/boho_waredrobe_2.png",
-        "assets/boho_waredrobe_3.png"
-      ]
-    },
-    "Kids": {
-      "Beds": [
-        "assets/kids_bed_1.png",
-        "assets/kids_bed_2.png",
-        "assets/kids_bed_3.png",
-      ],
-      "Sofas": [
-        "assets/kids_sofa_1.png",
-        "assets/kids_sofa_2.png",
-        "assets/kids_sofa_3.png",
-      ],
-      "Wardrops": [
-        "assets/kids_wardrop_1.png",
-        "assets/kids_wardrop_2.png",
-        "assets/kids_wardrop_3.png",
-      ],
-    },
-    "Classic": {
-      "Beds": [
-        "assets/classic_bed_1.png",
-        "assets/classic_bed_2.png",
-        "assets/classic_bed_3.png",
-      ],
-      "Sofas": [
-        "assets/classic_sofa_1.png",
-        "assets/classic_sofa_2.png",
-        "assets/classic_sofa_3.png",
-      ],
-    },
-    "Modern": {
-      "Beds": [
-        "assets/modern_bed_1.png",
-        "assets/modern_bed_2.png",
-        "assets/modern_bed_3.png",
-      ],
-      "Sofas": [
-        "assets/modern_sofa_1.png",
-        "assets/modern_sofa_2.png",
-        "assets/modern_sofa_3.png",
-      ],
-    },
-  };
+  Map<String, Map<String, List<String>>> categoryImages = {};
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategoryImages();
+  }
+
+  Future<void> _loadCategoryImages() async {
+    try {
+      for (var category in categories) {
+        final categoryName = category['title']!;
+        final folderName = _getFolderName(categoryName);
+        categoryImages[categoryName] = {};
+
+        final subcategories = ['Beds', 'Sofas', 'Wardrobes'];
+
+        for (var subcategory in subcategories) {
+          final images = await _getImagesForSubcategory(folderName, subcategory);
+          categoryImages[categoryName]![subcategory] = images;
+        }
+      }
+
+      setState(() => isLoading = false);
+    } catch (e) {
+      print('Error loading images: $e');
+      setState(() => isLoading = false);
+    }
+  }
+
+  String _getFolderName(String category) {
+    switch (category) {
+      case 'Bohemian': return 'boho';
+      default: return category.toLowerCase();
+    }
+  }
+
+  Future<List<String>> _getImagesForSubcategory(String categoryFolder, String subcategory) async {
+    final path = '$basePath/explore_images/$categoryFolder/$subcategory';
+    final apiUrl = 'https://api.github.com/repos/$repoOwner/$repoName/contents/$path';
+
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+      if (response.statusCode == 200) {
+        final List<dynamic> files = json.decode(response.body);
+        return files
+            .where((file) => file['type'] == 'file')
+            .map<String>((file) => _getCdnUrl('$path/${file['name']}'))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error loading $categoryFolder/$subcategory: $e');
+      return [];
+    }
+  }
+
+  String _getCdnUrl(String relativePath) {
+    return 'https://cdn.jsdelivr.net/gh/$repoOwner/$repoName@$branch/$relativePath';
+  }
+
+  String _getCategoryImageUrl(String imageName) {
+    return _getCdnUrl('$basePath/category_images/$imageName');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,9 +105,11 @@ class FurnitureScreen extends StatelessWidget {
         children: [
           // Background image
           Positioned.fill(
-            child: Image.asset(
-              "assets/explore outer background.png",
+            child: CachedNetworkImage(
+              imageUrl: _getCdnUrl('$basePath/explore_images/background.png'),
               fit: BoxFit.cover,
+              placeholder: (context, url) => Container(color: Colors.grey[200]),
+              errorWidget: (context, url, error) => Icon(Icons.error),
             ),
           ),
 
@@ -100,8 +119,7 @@ class FurnitureScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 40), // Add spacing at the top
-                // title text
+                const SizedBox(height: 40),
                 const Text(
                   "Furniture\nin your style",
                   style: TextStyle(
@@ -110,33 +128,32 @@ class FurnitureScreen extends StatelessWidget {
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 20), // Add spacing between title and categories
+                const SizedBox(height: 20),
 
-                // Categories
-                Expanded(
-                  // Wrap the MasonryGridView with Expanded to make it fill the available space
+                isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : Expanded(
                   child: MasonryGridView.count(
-                    crossAxisCount: 2, // Number of columns
-                    mainAxisSpacing: 10, // Spacing between rows
-                    crossAxisSpacing: 10, // Spacing between columns
-                    itemCount: categories.length, // Number of our categories list (bohemian, kids, modern, classic)
-                    itemBuilder: (context, index) { // Build our categories cards using our CategoryCard widget
-                      return GestureDetector( // Add a GestureDetector to handle taps
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      return GestureDetector(
                         onTap: () {
-                          String selectedCategory = categories[index]["title"]!; // Get the title of the selected category
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => CategoryImagesScreen(
-                                categoryTitle: selectedCategory,
-                                categoryImages: categoryImages[selectedCategory] ?? {},
+                                categoryTitle: categories[index]["title"]!,
+                                categoryImages: categoryImages[categories[index]["title"]!] ?? {},
                               ),
                             ),
                           );
                         },
                         child: CategoryCard(
                           title: categories[index]["title"]!,
-                          imagePath: categories[index]["image"]!,
+                          imageUrl: _getCategoryImageUrl(categories[index]["image"]!),
                         ),
                       );
                     },
@@ -153,29 +170,37 @@ class FurnitureScreen extends StatelessWidget {
 
 class CategoryCard extends StatelessWidget {
   final String title;
-  final String imagePath;
+  final String imageUrl;
 
-  // Constructor for the CategoryCard widget
   const CategoryCard({
     required this.title,
-    required this.imagePath
+    required this.imageUrl,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material( // Wrap the Material widget around the Card widget to add elevation and rounded corners
+    return Material(
       elevation: 5,
       borderRadius: BorderRadius.circular(16),
-      child: ClipRRect( // Clip the image to the rounded corners
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            Image.asset(
-              imagePath,
+            CachedNetworkImage(
+              imageUrl: imageUrl,
               fit: BoxFit.cover,
-              width: double.infinity, // Make the image fill the available width
+              width: double.infinity,
+              placeholder: (context, url) => Container(
+                color: Colors.grey[200],
+                height: 150, // Set a fixed height for placeholder
+              ),
+              errorWidget: (context, url, error) => Container(
+                color: Colors.grey[200],
+                height: 150,
+                child: Icon(Icons.error),
+              ),
             ),
-            Positioned( // Positioned widget to place the title text on top of the image
+            Positioned(
               bottom: 0,
               left: 0,
               right: 0,
