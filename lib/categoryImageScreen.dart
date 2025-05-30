@@ -1,15 +1,14 @@
+import 'package:explore/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 //create class for category images screen
 class CategoryImagesScreen extends StatefulWidget {
   // create constructor for category images screen
-  final String categoryTitle;
-  final Map<String, List<String>> categoryImages;
+  final Category category;
 
   const CategoryImagesScreen({
-    required this.categoryTitle,
-    required this.categoryImages,
+    required this.category
   });
 
   //create state for category images screen
@@ -19,22 +18,17 @@ class CategoryImagesScreen extends StatefulWidget {
 
 // create state for category images screen
 class _CategoryImagesScreenState extends State<CategoryImagesScreen> {
-  String selectedSubCategory = "";
-
-  @override
-  void initState() {
-    super.initState();
-    // Set the first sub-category as the default selected one
-    selectedSubCategory = widget.categoryImages.keys.first;
-  }
+  int selectedSubCategoryIdx = 0; // Initialize the selected sub-category index
 
   @override
   Widget build(BuildContext context) {
+    final selectedSubCategory = widget.category.subCategories[selectedSubCategoryIdx];
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFFD7C6BD),
         title: Text(
-          widget.categoryTitle,
+          // Display the category title
+          widget.category.name,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black87,
@@ -59,20 +53,21 @@ class _CategoryImagesScreenState extends State<CategoryImagesScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), // Add padding to the text
                   child: SingleChildScrollView( // Add a SingleChildScrollView to scroll horizontally
-                    scrollDirection: Axis.horizontal, // Scroll horizontally
+                    scrollDirection: Axis.horizontal,
                     child: Row( // Row to display the sub-categories
-                      children: widget.categoryImages.keys.map((subCategory) { // Map the sub-categories to buttons
+                      children: widget.category.subCategories.indexed.map((pair) { // Map the sub-categories to buttons
+                        final (index, subCategory) = pair;
                         return TextButton(
                           onPressed: () {
                             setState(() {
-                              selectedSubCategory = subCategory;
+                              selectedSubCategoryIdx = index;
                             });
                           },
                           child: Text(
-                            subCategory,
+                            subCategory.name,
                             style: TextStyle(
                               color: Colors.black,
-                              fontWeight: selectedSubCategory == subCategory ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: selectedSubCategoryIdx == index ? FontWeight.bold : FontWeight.normal,
                             ),
                           ),
                         );
@@ -87,12 +82,13 @@ class _CategoryImagesScreenState extends State<CategoryImagesScreen> {
                       crossAxisCount: 2,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      itemCount: widget.categoryImages[selectedSubCategory]?.length ?? 0, // Get the number of images for the selected sub-category
+
+                      itemCount: selectedSubCategory.images.length, // Get the number of images for the selected sub-category
                       itemBuilder: (context, index) {
                         return ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Image.asset(
-                            widget.categoryImages[selectedSubCategory]![index], // Get the image path for the selected sub-category
+                          child: Image.network(
+                            "https://raw.githubusercontent.com/NadaHenedy/ar_data/refs/heads/main/explore_images/${widget.category.path}/${selectedSubCategory.path}/${selectedSubCategory.images[index]}" ,
                             fit: BoxFit.cover,
                             width: double.infinity,
                           ),

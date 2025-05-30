@@ -31,10 +31,8 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_staggered_grid_view: ^0.7.0
-  firebase_core: ^2.24.0
-  firebase_auth: ^4.10.0
-  cloud_firestore: ^4.8.0
-  firebase_storage: ^11.7.0
+
+  github: ^9.13.0
   cached_network_image: ^3.2.3
   http: ^0.13.5
 
@@ -69,42 +67,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-     - assets/bohemiancrop.jpg
-     - assets/classic.jpg
-     - assets/explore inner background.png
-     - assets/explore outer background.png
-     - assets/kids.jpg
-     - assets/modern.jpg
-     - assets/boho_bed_1.png
-     - assets/boho_bed_2.png
-     - assets/boho_bed_3.png
-     - assets/boho_sofa_1.png
-     - assets/boho_sofa_2.png
-     - assets/boho_sofa_3.png
-     - assets/boho_waredrobe_1.png
-     - assets/boho_waredrobe_2.png
-     - assets/boho_waredrobe_3.png
-     - assets/classic_bed_1.png
-     - assets/classic_bed_2.png
-     - assets/classic_bed_3.png
-     - assets/classic_sofa_1.png
-     - assets/classic_sofa_2.png
-     - assets/classic_sofa_3.png
-     - assets/kids_bed_1.png
-     - assets/kids_bed_2.png
-     - assets/kids_bed_3.png
-     - assets/kids_sofa_1.png
-     - assets/kids_sofa_2.png
-     - assets/kids_sofa_3.png
-     - assets/kids_wardrop_1.png
-     - assets/kids_wardrop_2.png
-     - assets/kids_wardrop_3.png
-     - assets/modern_bed_1.png
-     - assets/modern_bed_2.png
-     - assets/modern_bed_3.png
-     - assets/modern_sofa_1.png
-     - assets/modern_sofa_2.png
-     - assets/modern_sofa_3.png
+     - assets/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
